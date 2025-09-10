@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Submit Civic Report</title>
+
+  <!-- Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+
+  <style>
+    :root{
+      --primary-green:#16A34A; --primary-green-hover:#15803D;
+      --gray-100:#F3F4F6; --gray-200:#E5E7EB; --gray-300:#D1D5DB;
+      --gray-500:#6B7280; --gray-700:#374151; --gray-800:#1F2937;
+      --white:#FFFFFF; --red-500:#EF4444; --green-500:#22C55E;
+      --shadow-md:0 4px 6px -1px rgb(0 0 0 / 0.1),0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg:0 10px 15px -3px rgb(0 0 0 / 0.1),0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+    body{font-family:'Inter',sans-serif;margin:0;background:var(--white);color:var(--gray-800);}
+    .app-header{background:var(--white);padding:1rem;box-shadow:var(--shadow-md);}
+    .app-header h1{margin:0;font-size:1.25rem;font-weight:700}
+    .page-content{padding:1.25rem;background:var(--gray-100);min-height:100vh;}
+    .form-input,.form-select,.form-textarea{
+      width:100%;padding:0.75rem;border:1px solid var(--gray-300);border-radius:0.375rem;margin-bottom:1rem;
+      font:inherit;
+    }
+    .submit-btn{
+      width:100%;background:var(--primary-green);color:#fff;border:none;border-radius:0.375rem;
+      padding:0.75rem 1rem;font-weight:600;cursor:pointer
+    }
+    .submit-btn:hover{background:var(--primary-green-hover)}
+    #report-map{height:260px;width:100%;border-radius:0.5rem;margin-bottom:1rem;background:var(--gray-200)}
+    .image-preview{display:none;margin-top:0.5rem;border-radius:0.375rem;max-height:10rem}
+    .image-preview.visible{display:block}
+    #notification-container{position:fixed;top:1rem;right:1rem;z-index:1000}
+    .toast{
+      padding:0.85rem 1rem;border-radius:0.5rem;color:#fff;margin-bottom:0.5rem;box-shadow:var(--shadow-lg);
+      opacity:0;transform:translateX(100%);transition:opacity .4s,transform .4s
+    }
+    .toast.show{opacity:1;transform:translateX(0)}
+    .toast.success{background:var(--green-500)}
+    .toast.error{background:var(--red-500)}
+  </style>
+</head>
+<body>
+  <div id="notification-container"></div>
+
+  <header class="app-header">
+    <h1>Report an Issue</h1>
+  </header>
+
+  <main class="page-content">
+    <form id="report-form" enctype="multipart/form-data">
+      <div id="report-map"></div>
+      <button type="button" id="use-current-location-btn" class="submit-btn" style="margin: .5rem 0 1rem; background: var(--gray-700);">
+        Use My Current Location
+      </button>
+
+      <select id="issue-category" name="category" class="form-select" required>
+        <option value="">Select a category...</option>
+        <option value="pothole">Pothole</option>
+        <option value="streetlight">Streetlight Out</option>
+        <option value="waste">Waste Management</option>
+        <option value="graffiti">Graffiti</option>
+        <option value="other">Other</option>
+      </select>
+
+      <input type="text" id="street-address" name="street" class="form-input" placeholder="Street Address" required>
+      <input type="text" id="landmark" name="landmark" class="form-input" placeholder="Nearby Landmark (optional)">
+      <input type="text" id="city" name="city" class="form-input" placeholder="City" required>
+      <input type="text" id="pincode" name="pincode" class="form-input" placeholder="Pincode" required>
+
+      <label for="file-upload" style="font-weight:600;">Upload Photo</label>
+      <input id="file-upload" name="file" type="file" class="form-input" accept="image/*">
+      <img id="image-preview" class="image-preview" alt="Preview"/>
+
+      <textarea id="description" name="description" rows="3" class="form-textarea" placeholder="Optional: Add more details..."></textarea>
+
+      <input type="hidden" id="latitude" name="latitude">
+      <input type="hidden" id="longitude" name="longitude">
+      <input type="hidden" id="reporterName" name="reporterName" value="Logged In User"> 
+      <input type="hidden" id="reporterEmail" name="reporterEmail" value="">
+
+      <button type="submit" class="submit-btn">Submit Report</button>
+    </form>
+  </main>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const API_URL = 'http://localhost:8080/api/reports';
+        const reportForm = document.getElementById('report-form');
+        const notif = document.getElementById('notification-container');
+        const reporterEmailInput = document.getElementById('reporterEmail');
+
+        // *** KEY CHANGE: Get email from localStorage and set it in the form ***
+        const loggedInUserEmail = localStorage.getItem('civic-reporter-user-email');
+        if (loggedInUserEmail) {
+            reporterEmailInput.value = loggedInUserEmail;
+        } else {
+            // If no user is logged in, show an error and prevent submission
+            toast('You must be logged in to report an issue.', 'error');
+            // Optionally redirect after a delay
+            setTimeout(() => { window.location.href = 'login.html'; }, 3000);
+        }
+
+        function toast(msg, type='success'){
+          const el = document.createElement('div');
+          el.className = 'toast ' + type;
+          el.textContent = msg;
+          notif.appendChild(el);
+          requestAnimationFrame(()=> el.classList.add('show'));
+          setTimeout(()=> el.remove(), 4000);
+        }
+
+        // Map
+        let map, marker;
+        function initMap(){
+          map = L.map('report-map').setView([23.16, 79.93], 13);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+            maxZoom: 19, attribution:'© OpenStreetMap'
+          }).addTo(map);
+          marker = L.marker(map.getCenter(), { draggable: true }).addTo(map);
+          setCoords(marker.getLatLng());
+          marker.on('dragend', e => setCoords(e.target.getLatLng()));
+          map.on('click', e => { marker.setLatLng(e.latlng); setCoords(e.latlng); });
+          setTimeout(()=> map.invalidateSize(), 200);
+        }
+        function setCoords(ll){
+          document.getElementById('latitude').value  = ll.lat;
+          document.getElementById('longitude').value = ll.lng;
+        }
+        initMap();
+
+        // Use current location
+        document.getElementById('use-current-location-btn').addEventListener('click', ()=>{
+          if (!navigator.geolocation){ toast('Geolocation not supported','error'); return; }
+          navigator.geolocation.getCurrentPosition(
+            pos=>{
+              const {latitude, longitude} = pos.coords;
+              const latlng={lat:latitude,lng:longitude};
+              map.setView(latlng,16);
+              marker.setLatLng(latlng);
+              setCoords(latlng);
+              toast('Location set!');
+            },
+            ()=> toast('Could not get location','error'),
+            { enableHighAccuracy:true, timeout:10000 }
+          );
+        });
+
+        // File preview
+        document.getElementById('file-upload').addEventListener('change', e=>{
+          const file = e.target.files[0];
+          const img = document.getElementById('image-preview');
+          if (!file){ img.classList.remove('visible'); img.removeAttribute('src'); return; }
+          const reader = new FileReader();
+          reader.onload = ev => { img.src=ev.target.result; img.classList.add('visible'); };
+          reader.readAsDataURL(file);
+        });
+
+        // Submit
+        reportForm.addEventListener('submit', async e=>{
+          e.preventDefault();
+
+          // *** KEY CHANGE: Check for email before submitting ***
+          if (!reporterEmailInput.value) {
+              toast('Could not submit. User email not found. Please log in again.', 'error');
+              return;
+          }
+
+          const btn = reportForm.querySelector('button[type="submit"]');
+          btn.disabled=true; const old=btn.textContent; btn.textContent='Submitting...';
+          try{
+            const formData = new FormData(reportForm);
+            const reportObj = {
+              category: formData.get('category'),
+              street: formData.get('street'),
+              landmark: formData.get('landmark'),
+              city: formData.get('city'),
+              pincode: formData.get('pincode'),
+              description: formData.get('description'),
+              latitude: formData.get('latitude'),
+              longitude: formData.get('longitude'),
+              reporterName: formData.get('reporterName'),
+              reporterEmail: formData.get('reporterEmail')
+            };
+            const finalData = new FormData();
+            finalData.append('report', new Blob([JSON.stringify(reportObj)], {type:'application/json'}));
+            if (formData.get('file')) finalData.append('file', formData.get('file'));
+
+            const res = await fetch(API_URL,{method:'POST', body:finalData});
+            if(!res.ok) throw new Error('Failed to submit');
+            toast('Report submitted successfully! Redirecting...','success');
+            reportForm.reset();
+            document.getElementById('image-preview').classList.remove('visible');
+             // Redirect after successful submission
+            setTimeout(() => { window.location.href = 'my-reports.html'; }, 2000);
+          }catch(err){
+            toast(err.message || 'Something went wrong','error');
+          }finally{
+            btn.disabled=false; btn.textContent=old;
+          }
+        });
+    });
+  </script>
+</body>
+</html>
+

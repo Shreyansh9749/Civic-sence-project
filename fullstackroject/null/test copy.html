@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Civic Issue Reporter</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Theme Color for PWA -->
+    <meta name="theme-color" content="#16A34A">
+    
+    <!-- Inter Font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet.js for simple maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Custom CSS -->
+    <style>
+        /* CSS Reset and Basic Setup */
+        :root {
+            --primary-green: #16A34A;
+            --primary-green-hover: #15803D;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-300: #D1D5DB;
+            --gray-500: #6B7280;
+            --gray-700: #374151;
+            --gray-800: #1F2937;
+            --white: #FFFFFF;
+            --black: #000000;
+            --red-500: #EF4444;
+            --green-500: #22C55E;
+            --yellow-500: #F59E0B;
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: var(--white);
+            color: var(--gray-800);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent scrolling on body */
+        }
+
+        .page {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-y: auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            transition: transform 0.3s ease-in-out;
+            background-color: var(--white);
+        }
+        
+        #home-page { z-index: 10; transform: translateX(0); }
+        #my-issues-page, #admin-page { z-index: 30; transform: translateX(100%); }
+
+        .page.visible { transform: translateX(0); }
+        .page:not(.visible) { transform: translateX(-100%); }
+        #my-issues-page:not(.visible), #admin-page:not(.visible) { transform: translateX(100%); }
+
+        /* Header */
+        .app-header {
+            background-color: var(--white);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-md);
+            z-index: 20;
+            position: sticky;
+            top: 0;
+            flex-shrink: 0;
+        }
+        .app-header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .header-controls button {
+            background: none;
+            border: 1px solid var(--gray-300);
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            margin-left: 0.5rem;
+            font-weight: 500;
+        }
+        .header-controls button:hover { background-color: var(--gray-100); }
+        .header-controls .user-info { font-size: 0.875rem; color: var(--gray-700); }
+
+        /* Main Content Area */
+        .main-content { flex-grow: 1; }
+        
+        /* Hero Section */
+        .hero-section {
+            text-align: center;
+            padding: 4rem 1.5rem;
+            background-color: var(--gray-100);
+        }
+        .hero-section h2 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin: 0 0 1rem;
+        }
+        .hero-section p {
+            font-size: 1.125rem;
+            color: var(--gray-500);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+        .hero-section .report-btn {
+            background-color: var(--primary-green);
+            color: var(--white);
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .hero-section .report-btn:hover { background-color: var(--primary-green-hover); }
+        .hero-section .report-btn:disabled { background-color: var(--gray-300); cursor: not-allowed; }
+
+        /* How It Works Section */
+        .how-it-works-section {
+            padding: 3rem 1.5rem;
+            background-color: var(--white);
+            text-align: center;
+        }
+        .how-it-works-section h2 {
+            font-size: 1.875rem;
+            margin-bottom: 2rem;
+        }
+        .steps-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .step-card {
+            max-width: 300px;
+        }
+        .step-card .icon {
+            background-color: #D1FAE5;
+            color: var(--primary-green);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        .step-card svg { width: 32px; height: 32px; }
+        .step-card h3 { font-size: 1.25rem; margin: 0 0 0.5rem; }
+        .step-card p { color: var(--gray-500); }
+
+        /* Page Styles (My Issues, Admin) */
+        .page-header {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            box-shadow: var(--shadow-md);
+            flex-shrink: 0;
+            background: var(--white);
+        }
+        .page-header h2 {
+             font-size: 1.25rem;
+             margin: 0;
+             margin-left: 1rem;
+        }
+        .back-btn {
+            background: none; border: none; cursor: pointer; padding: 0.5rem;
+        }
+        .page-content {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex-grow: 1;
+            background-color: var(--gray-100);
+        }
+        
+        /* Admin Page */
+        #admin-map { 
+            width: 100%; 
+            height: 60vh;
+            background-color: var(--gray-300); 
+            z-index: 5; 
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-md);
+        }
+        .admin-filters {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .admin-filters label { font-weight: 500; }
+
+        /* Floating Action Button */
+        .fab-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 10; }
+        #report-issue-btn {
+            background-color: var(--primary-green);
+            color: var(--white);
+            border: none;
+            border-radius: 9999px;
+            width: 4rem;
+            height: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        #report-issue-btn:hover { background-color: var(--primary-green-hover); transform: scale(1.05); }
+        #report-issue-btn:disabled { background-color: var(--gray-300); cursor: not-allowed; transform: none; }
+        #report-issue-btn svg { width: 2rem; height: 2rem; }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 50;
+            opacity: 1;
+            pointer-events: auto;
+            transition: opacity 0.25s ease;
+        }
+        .modal.hidden { opacity: 0; pointer-events: none; }
+        .modal-content {
+            background-color: var(--white);
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-xl);
+            width: 100%;
+            max-width: 32rem; /* Wider modal for map */
+            padding: 1.5rem;
+            transform: scale(1);
+            transition: transform 0.25s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal.hidden .modal-content { transform: scale(0.95); }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .modal-header h2 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+        .close-modal-btn { background: none; border: none; cursor: pointer; color: var(--gray-500); }
+        .close-modal-btn:hover { color: var(--gray-800); }
+        .close-modal-btn svg { width: 1.5rem; height: 1.5rem; }
+
+        /* Form Elements */
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--gray-700); margin-bottom: 0.25rem; }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.5);
+        }
+        
+        #report-map { height: 250px; width: 100%; border-radius: 0.5rem; margin-bottom: 1rem; }
+
+        .address-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .file-drop-zone { margin-top: 0.25rem; display: flex; justify-content: center; padding: 1.25rem 1.5rem; border: 2px dashed var(--gray-300); border-radius: 0.375rem; }
+        .file-drop-zone-content { text-align: center; }
+        .file-drop-zone-content svg { margin: 0 auto; height: 3rem; width: 3rem; color: #9CA3AF; }
+        .file-drop-zone-text { font-size: 0.875rem; color: #4B5563; }
+        .file-upload-label { cursor: pointer; border-radius: 0.375rem; font-weight: 500; color: var(--primary-green); }
+        .file-upload-label:hover { color: var(--primary-green-hover); }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
+        .image-preview { margin-top: 1rem; border-radius: 0.375rem; max-height: 10rem; margin-left: auto; margin-right: auto; display: none; }
+        .image-preview.visible { display: block; }
+        .submit-btn {
+            width: 100%;
+            background-color: var(--primary-green);
+            color: var(--white);
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 1.5rem;
+        }
+        .submit-btn:hover { background-color: var(--primary-green-hover); }
+        .submit-btn:disabled { background-color: #9CA3AF; cursor: not-allowed; }
+
+        /* My Issues List Item */
+        .issue-item { padding: 1rem; border-bottom: 1px solid var(--gray-200); background-color: var(--white); border-radius: 0.5rem; margin-bottom: 1rem; box-shadow: var(--shadow-md); }
+        .issue-item:last-child { border-bottom: none; }
+        .issue-item-header { display: flex; justify-content: space-between; align-items: center; }
+        .issue-item h3 { font-size: 1rem; font-weight: 600; margin: 0; }
+        .issue-item-status { font-size: 0.875rem; padding: 0.25rem 0.5rem; border-radius: 9999px; font-weight: 500; }
+        .issue-item-status.submitted { background-color: var(--gray-200); color: var(--gray-800); }
+        .issue-item-status.in-progress { background-color: #FEF3C7; color: #92400E; }
+        .issue-item-status.resolved { background-color: #D1FAE5; color: #065F46; }
+        .issue-item-address { font-size: 0.875rem; color: var(--gray-500); margin: 0.5rem 0; }
+        .issue-item p { font-size: 0.875rem; color: var(--gray-700); margin: 0.5rem 0 0; }
+
+        /* Notification System */
+        #notification-container { position: fixed; top: 1.25rem; right: 1.25rem; z-index: 100; }
+        .toast {
+            border-radius: 0.375rem;
+            box-shadow: var(--shadow-lg);
+            padding: 1rem;
+            color: var(--white);
+            max-width: 24rem;
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        .toast.show { opacity: 1; transform: translateX(0); }
+        .toast.success { background-color: var(--green-500); }
+        .toast.error { background-color: var(--red-500); }
+        .toast.info { background-color: var(--primary-green); }
+        
+        /* Leaflet Popup Customization */
+        .leaflet-popup-content-wrapper { border-radius: 0.5rem; }
+        .leaflet-popup-content { font-family: 'Inter', sans-serif; }
+        .leaflet-popup-content h3 { font-size: 1rem; font-weight: 600; margin: 0 0 0.5rem; color: var(--gray-800); }
+        .leaflet-popup-content p { margin: 0 0 0.5rem; color: var(--gray-700); }
+        .leaflet-popup-content small { color: var(--gray-500); }
+    </style>
+</head>
+<body>
+
+    <div id="notification-container"></div>
+
+    <div class="page visible" id="home-page">
+        <header class="app-header">
+            <h1>Civic Reporter</h1>
+            <div id="header-controls" class="header-controls">
+                <!-- This will be populated by JS -->
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="hero-section">
+                <h2>See an issue? Report it.</h2>
+                <p>Help improve our city by reporting problems like potholes, broken streetlights, and overflowing bins. Your reports go directly to the municipal departments that can fix them.</p>
+                <button id="hero-report-btn" class="report-btn" title="Log in to report an issue" disabled>Report an Issue</button>
+            </section>
+
+            <section class="how-it-works-section">
+                <h2>How It Works</h2>
+                <div class="steps-container">
+                    <div class="step-card">
+                        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg></div>
+                        <h3>1. Set the Location</h3>
+                        <p>Use your device's GPS for an automatic address, or enter the details manually.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" /></svg></div>
+                        <h3>2. Snap & Describe</h3>
+                        <p>Take a photo, select a category, and add a brief description to provide clear details.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg></div>
+                        <h3>3. Track Progress</h3>
+                        <p>Receive notifications and track the status of your reported issues from "Submitted" to "Resolved".</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="page" id="my-issues-page">
+        <div class="page-header">
+            <button class="back-btn" data-target="home" title="Back to home">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 1.5rem; height: 1.5rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+            </button>
+            <h2>My Reported Issues</h2>
+        </div>
+        <div class="page-content" id="my-issues-list-container">
+            <!-- User's issues will be populated here by JS -->
+        </div>
+    </div>
+
+    <div class="page" id="admin-page">
+        <div class="page-header">
+            <button class="back-btn" data-target="home" title="Back to home">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 1.5rem; height: 1.5rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+            </button>
+            <h2>Admin Dashboard</h2>
+        </div>
+        <div class="page-content">
+            <div class="admin-filters">
+                <label for="status-filter">Filter by status:</label>
+                <select id="status-filter" class="form-select" style="width: 200px;">
+                    <option value="All">All</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                </select>
+            </div>
+            <div id="admin-map"></div>
+        </div>
+    </div>
+    
+    <div class="fab-container">
+        <button id="report-issue-btn" title="Log in to report an issue" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+        </button>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Login or Sign Up</h2>
+                <button class="close-modal-btn" data-modal-id="login-modal">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="user-name" class="form-label">Full Name</label>
+                    <input type="text" id="user-name" class="form-input" required placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label for="user-email" class="form-label">Email Address</label>
+                    <input type="email" id="user-email" class="form-input" required placeholder="you@example.com">
+                </div>
+                <button type="submit" class="submit-btn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Report Submission Modal -->
+    <div id="report-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Report a New Issue</h2>
+                <button class="close-modal-btn" data-modal-id="report-modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <form id="report-form" action="http://localhost:8080/api/reports" method="post" >
+                <div id="report-map"></div>
+                <button type="button" id="use-current-location-btn" class="submit-btn" style="margin-top: 1rem; margin-bottom: 1rem; background-color: var(--gray-700);">Use My Current Location</button>
+
+                <div class="form-group">
+                    <label for="issue-category" class="form-label">Category</label>
+                    <select id="issue-category" name="category" class="form-select" required>
+                        <option value="">Select a category...</option>
+                        <option value="pothole">Pothole</option>
+                        <option value="streetlight">Streetlight Out</option>
+                        <option value="waste">Waste Management</option>
+                        <option value="graffiti">Graffiti</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Location Details</label>
+                    <div class="address-grid">
+                        <div class="form-group full-width">
+                            <label for="street-address" class="form-label sr-only">Street Address</label>
+                            <input type="text" id="street-address" name="street" class="form-input" placeholder="Street Address" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="landmark" class="form-label sr-only">Landmark</label>
+                            <input type="text" id="landmark" name="landmark" class="form-input" placeholder="Nearby Landmark (optional)">
+                        </div>
+                        <div class="form-group">
+                             <label for="city" class="form-label sr-only">City</label>
+                            <input type="text" id="city" name="city" class="form-input" placeholder="City" required>
+                        </div>
+                         <div class="form-group">
+                            <label for="pincode" class="form-label sr-only">Pincode</label>
+                            <input type="text" id="pincode" name="pincode" class="form-input" placeholder="Pincode" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Photo</label>
+                    <div class="file-drop-zone">
+                        <div class="file-drop-zone-content">
+                            <svg stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                            <div class="file-drop-zone-text">
+                                <label for="file-upload" class="file-upload-label">
+                                    <span>Upload a file</span>
+                                    <input id="file-upload" name="file" type="file" class="sr-only" accept="image/*" capture="environment">
+                                </label>
+                                <p style="padding-left: 0.25rem; display: inline;">or take a picture</p>
+                            </div>
+                            <p style="font-size: 0.75rem; color: #6B7280;">PNG, JPG up to 10MB</p>
+                        </div>
+                    </div>
+                     <img id="image-preview" class="image-preview" alt="Image preview"/>
+                </div>
+
+                <div class="form-group">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea id="description" name="description" rows="3" class="form-textarea" placeholder="Optional: Add more details..."></textarea>
+                </div>
+
+                <input type="hidden" id="latitude" name="latitude">
+                <input type="hidden" id="longitude" name="longitude">
+                <input type="hidden" id="reporterName" name="reporterName">
+                <input type="hidden" id="reporterEmail" name="reporterEmail">
+                
+                <button type="submit" class="submit-btn">Submit Report</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- FAKE BACKEND / MOCK DATA ---
+        let fakeReports = [
+            { id: 1, category: 'pothole', description: 'Large pothole causing traffic issues.', latitude: 23.1686, longitude: 79.9336, reporterName: 'Amit Sharma', reporterEmail: 'amit@example.com', status: 'Submitted', street: 'Russel Chowk', landmark: 'Near Samdareeya Mall', city: 'Jabalpur', pincode: '482001' },
+            { id: 2, category: 'streetlight', description: 'Streetlight out.', latitude: 23.165, longitude: 79.942, reporterName: 'Priya Verma', reporterEmail: 'priya@example.com', status: 'In Progress', street: 'Naudra Bridge', landmark: '', city: 'Jabalpur', pincode: '482001' },
+            { id: 3, category: 'waste', description: 'Trash bin overflowing.', latitude: 23.173, longitude: 79.936, reporterName: 'Amit Sharma', reporterEmail: 'amit@example.com', status: 'Resolved', street: 'Bhawartal Garden Road', landmark: 'Main Gate', city: 'Jabalpur', pincode: '482002' },
+            { id: 4, category: 'graffiti', description: 'Graffiti on the wall.', latitude: 23.170, longitude: 79.935, reporterName: 'Rohan Gupta', reporterEmail: 'rohan@example.com', status: 'Submitted', street: 'Gol Bazar', landmark: 'Rani Durgavati Museum', city: 'Jabalpur', pincode: '482002' },
+        ];
+
+        const fakeApi = {
+            getReports: (filters = {}) => {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        let reports = fakeReports;
+                        if (filters.email) {
+                            reports = reports.filter(r => r.reporterEmail === filters.email);
+                        }
+                        if (filters.status && filters.status !== 'All') {
+                             reports = reports.filter(r => r.status === filters.status);
+                        }
+                        resolve(reports);
+                    }, 500);
+                });
+            },
+            addReport: (formData) => {
+                 return new Promise(resolve => {
+                    setTimeout(() => {
+                        let lat = parseFloat(formData.get('latitude'));
+                        let lng = parseFloat(formData.get('longitude'));
+                       
+                        const newReport = {
+                            id: fakeReports.length + 1,
+                            category: formData.get('category'),
+                            description: formData.get('description'),
+                            latitude: lat,
+                            longitude: lng,
+                            reporterName: formData.get('reporterName'),
+                            reporterEmail: formData.get('reporterEmail'),
+                            status: 'Submitted',
+                            street: formData.get('street'),
+                            landmark: formData.get('landmark'),
+                            city: formData.get('city'),
+                            pincode: formData.get('pincode'),
+                        };
+                        fakeReports.push(newReport);
+                        resolve(newReport);
+                    }, 800);
+                });
+            }
+        };
+        // --- END OF FAKE BACKEND ---
+
+        // --- State Management ---
+        let currentUser = null;
+        let adminMap, reportMap;
+        let adminReportsLayer = L.layerGroup();
+        let locationMarker;
+
+        // --- DOM Elements ---
+        const pages = {
+            home: document.getElementById('home-page'),
+            myIssues: document.getElementById('my-issues-page'),
+            admin: document.getElementById('admin-page'),
+        };
+        const headerControls = document.getElementById('header-controls');
+        const heroReportBtn = document.getElementById('hero-report-btn');
+        const reportIssueBtn = document.getElementById('report-issue-btn'); // FAB
+        const reportForm = document.getElementById('report-form');
+        const statusFilter = document.getElementById('status-filter');
+        const modals = {
+            login: document.getElementById('login-modal'),
+            report: document.getElementById('report-modal'),
+        };
+
+        // --- Notification System ---
+        const notificationContainer = document.getElementById('notification-container');
+        function showNotification(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            notificationContainer.appendChild(toast);
+            requestAnimationFrame(() => { toast.classList.add('show'); });
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 5000);
+        }
+
+        // --- UI Update Functions & Page Navigation ---
+        function showPage(pageId) {
+            Object.values(pages).forEach(page => page.classList.remove('visible'));
+            pages[pageId].classList.add('visible');
+
+            if (pageId === 'myIssues') {
+                fetchAndDisplayMyIssues();
+            }
+            if (pageId === 'admin') {
+                initializeAdminMap();
+                fetchAndDisplayAdminReports();
+                // Ensure map renders correctly
+                setTimeout(() => adminMap && adminMap.invalidateSize(), 10);
+            }
+        }
+
+        function updateUIForLogin() {
+            headerControls.innerHTML = `
+                <span class="user-info">Welcome, ${currentUser.name}!</span>
+                <button id="my-issues-btn">My Issues</button>
+                <button id="admin-view-btn">Admin View</button>
+                <button id="logout-btn">Logout</button>
+            `;
+            heroReportBtn.disabled = false;
+            heroReportBtn.title = "Report a new issue";
+            reportIssueBtn.disabled = false;
+            reportIssueBtn.title = "Report a new issue";
+            document.getElementById('my-issues-btn').addEventListener('click', () => showPage('myIssues'));
+            document.getElementById('admin-view-btn').addEventListener('click', () => showPage('admin'));
+            document.getElementById('logout-btn').addEventListener('click', handleLogout);
+        }
+
+        function updateUIForLogout() {
+            headerControls.innerHTML = `<button id="login-btn">Login / Sign Up</button>`;
+            heroReportBtn.disabled = true;
+            heroReportBtn.title = "Log in to report an issue";
+            reportIssueBtn.disabled = true;
+            reportIssueBtn.title = "Log in to report an issue";
+            document.getElementById('login-btn').addEventListener('click', () => openModal('login'));
+        }
+
+        // --- Modal Handling ---
+        const openModal = (modalId) => {
+            modals[modalId].classList.remove('hidden');
+            if (modalId === 'report') {
+                initializeReportMap();
+            }
+        };
+        const closeModal = (modalId) => {
+             modals[modalId].classList.add('hidden');
+             if(modalId === 'report' && reportMap) {
+                 reportMap.remove();
+                 reportMap = null;
+             }
+        };
+        document.querySelectorAll('.close-modal-btn').forEach(btn => {
+            btn.addEventListener('click', () => closeModal(btn.dataset.modalId));
+        });
+        document.querySelectorAll('.modal').forEach(modal => {
+             modal.addEventListener('click', (event) => {
+                if (event.target === modal) closeModal(modal.id.replace('-modal', ''));
+            });
+        });
+
+        // --- Authentication ---
+        function checkLoginStatus() {
+            const user = localStorage.getItem('civic-reporter-user');
+            if (user) {
+                currentUser = JSON.parse(user);
+                updateUIForLogin();
+            } else {
+                updateUIForLogout();
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const name = document.getElementById('user-name').value;
+            const email = document.getElementById('user-email').value;
+            if (name && email) {
+                currentUser = { name, email };
+                localStorage.setItem('civic-reporter-user', JSON.stringify(currentUser));
+                updateUIForLogin();
+                closeModal('login');
+                showNotification(`Welcome, ${name}!`, 'success');
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            localStorage.removeItem('civic-reporter-user');
+            updateUIForLogout();
+            showNotification('You have been logged out.', 'info');
+        }
+
+        // --- Leaflet Map and Geolocation ---
+        function initializeAdminMap() {
+            if (adminMap) return;
+            try {
+                adminMap = L.map('admin-map').setView([23.16, 79.93], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(adminMap);
+                adminReportsLayer.addTo(adminMap);
+            } catch (error) {
+                console.error("Admin map initialization failed:", error);
+                document.getElementById('admin-map').innerHTML = `<p style="color:red">Failed to load map.</p>`;
+            }
+        }
+
+        function initializeReportMap() {
+            if (reportMap) reportMap.remove();
+             try {
+                reportMap = L.map('report-map').setView([23.16, 79.93], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap'
+                }).addTo(reportMap);
+                
+                locationMarker = L.marker(reportMap.getCenter(), { draggable: true }).addTo(reportMap);
+                updateCoordsFromMarker(locationMarker.getLatLng());
+
+                locationMarker.on('dragend', (e) => {
+                    updateCoordsFromMarker(e.target.getLatLng());
+                });
+
+                reportMap.on('click', (e) => {
+                    locationMarker.setLatLng(e.latlng);
+                    updateCoordsFromMarker(e.latlng);
+                });
+
+                setTimeout(() => reportMap.invalidateSize(), 10);
+
+            } catch (error) {
+                 console.error("Report map initialization failed:", error);
+                 document.getElementById('report-map').innerHTML = `<p style="color:red">Failed to load map.</p>`;
+            }
+        }
+
+        async function updateCoordsFromMarker(latLng) {
+            document.getElementById('latitude').value = latLng.lat;
+            document.getElementById('longitude').value = latLng.lng;
+            
+             // Reverse Geocode to get address
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latLng.lat}&lon=${latLng.lng}`);
+                const data = await response.json();
+                if (data && data.address) {
+                    const addr = data.address;
+                    document.getElementById('street-address').value = addr.road || '';
+                    document.getElementById('city').value = addr.city || addr.town || addr.village || '';
+                    document.getElementById('pincode').value = addr.postcode || '';
+                }
+            } catch (e) {
+                console.warn('Could not auto-fill address.', e);
+            }
+        }
+        
+        const greenIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+        });
+        const yellowIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+        });
+
+        function addReportToAdminMap(report) {
+            const address = `${report.street}, ${report.city}`;
+            const popupContent = `<h3>${report.category} (${report.status})</h3><p>${address}</p><small>Description: ${report.description || 'N/A'}</small>`;
+            const status_map = {'Submitted': yellowIcon, 'In Progress': yellowIcon, 'Resolved': greenIcon}
+            const icon = status_map[report.status] || yellowIcon;
+
+            const marker = L.marker([report.latitude, report.longitude], { icon: icon })
+                .bindPopup(popupContent);
+            adminReportsLayer.addLayer(marker);
+        }
+
+        // --- Data Fetching and Display ---
+        async function fetchAndDisplayAdminReports() {
+            try {
+                const status = statusFilter.value;
+                const reports = await fakeApi.getReports({ status });
+                adminReportsLayer.clearLayers();
+                reports.forEach(addReportToAdminMap);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+        
+        async function fetchAndDisplayMyIssues() {
+            if (!currentUser) return;
+            const listEl = document.getElementById('my-issues-list-container');
+            listEl.innerHTML = '<p>Loading your issues...</p>';
+            try {
+                const reports = await fakeApi.getReports({ email: currentUser.email });
+
+                if (reports.length === 0) {
+                    listEl.innerHTML = '<p>You have not reported any issues yet.</p>';
+                    return;
+                }
+
+                listEl.innerHTML = reports.map(report => {
+                    const statusClass = report.status ? report.status.toLowerCase().replace(' ', '-') : 'submitted';
+                    const address = `${report.street}, ${report.city} - ${report.pincode}`;
+                    return `
+                    <div class="issue-item">
+                        <div class="issue-item-header">
+                            <h3>${report.category.charAt(0).toUpperCase() + report.category.slice(1)}</h3>
+                            <span class="issue-item-status ${statusClass}">${report.status || 'Submitted'}</span>
+                        </div>
+                        <p class="issue-item-address">${address}</p>
+                        <p>${report.description || 'No description provided.'}</p>
+                    </div>
+                `}).join('');
+            } catch(error) {
+                 listEl.innerHTML = `<p style="color:var(--red-500);">${error.message}</p>`;
+            }
+        }
+
+        // --- Form Handling ---
+        reportForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+            
+            document.getElementById('reporterName').value = currentUser.name;
+            document.getElementById('reporterEmail').value = currentUser.email;
+
+            const formData = new FormData(e.target);
+            try {
+                const newReport = await fakeApi.addReport(formData);
+                addReportToAdminMap(newReport); 
+                showNotification('Report submitted successfully!', 'success');
+                closeModal('report');
+                reportForm.reset();
+                document.getElementById('image-preview').classList.remove('visible');
+            } catch (error) {
+                showNotification(`Error: ${error.message}`, 'error');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Report';
+            }
+        });
+
+        const fileUpload = document.getElementById('file-upload');
+        fileUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('image-preview').src = e.target.result;
+                    document.getElementById('image-preview').classList.add('visible');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- Initial Setup ---
+        checkLoginStatus();
+        
+        const reportAction = () => openModal('report');
+        heroReportBtn.addEventListener('click', reportAction);
+        reportIssueBtn.addEventListener('click', reportAction);
+        
+        document.querySelectorAll('.back-btn').forEach(btn => btn.addEventListener('click', () => showPage('home')));
+        
+        document.getElementById('login-form').addEventListener('submit', handleLogin);
+        statusFilter.addEventListener('change', fetchAndDisplayAdminReports);
+        document.getElementById('use-current-location-btn').addEventListener('click', () => {
+             if (navigator.geolocation) {
+                showNotification('Getting your location...', 'info');
+                navigator.geolocation.getCurrentPosition( (position) => {
+                    const { latitude, longitude } = position.coords;
+                    reportMap.setView([latitude, longitude], 16);
+                    locationMarker.setLatLng([latitude, longitude]);
+                    updateCoordsFromMarker(L.latLng(latitude, longitude));
+                }, () => showNotification('Could not get location.', 'error'));
+            }
+        });
+    });
+    </script>
+</body>
+</html>
+
+

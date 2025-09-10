@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Civic Reporter - Admin Dashboard</title>
+
+<link rel="stylesheet" href="admin.css">
+
+</head>
+
+<body>
+
+<!-- Navbar -->
+
+<nav class="navbar">
+
+<div class="logo">Civic Reporter</div>
+
+<div class="nav-links">
+
+<button onclick="goHome()">Home</button>
+
+<button onclick="adminView()">Admin View</button>
+
+</div>
+
+</nav>
+
+
+<!-- Container -->
+
+<div class="container">
+
+<h2>All Reported Issues</h2>
+
+<p class="subtitle">Track the status of all issues reported by users.</p>
+
+
+<!-- Report list -->
+
+<div id="reportsContainer" class="reports-container">
+
+<p class="loading">Loading reports...</p>
+
+</div>
+
+</div>
+
+
+<script src="admin.js"></script>
+
+</body>
+
+</html>
