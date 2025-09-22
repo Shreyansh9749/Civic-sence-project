@@ -1,0 +1,141 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Reports - Civic Reporter</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="my-reports.css">
+</head>
+<body class="light-theme">
+
+  <div id="notification-container"></div>
+
+  <header class="app-header">
+    <h1>Civic Reporter</h1>
+    <div id="header-controls" class="header-controls">
+      <a href="userhome.html"><button>Home</button></a>
+      <a href="reporthome.html"><button>Report An Issue</button></a>
+      <button id="theme-toggle-btn" title="Toggle Theme">
+        🌙
+      </button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <div class="container">
+      <header class="page-title">
+        <h2>My Reported Issues</h2>
+        <p>Track, edit, or delete issues you've reported.</p>
+      </header>
+      <div id="my-issues-list-container"></div>
+    </div>
+  </main>
+
+  <script src="my-reports.js"></script>
+</body>
+</html> -->
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Reports - Civic Reporter</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="my-reports.css">
+</head>
+<body class="light-theme">
+
+  <div id="notification-container"></div>
+
+  <header class="app-header">
+    <h1>Civic Reporter</h1>
+    <div id="header-controls" class="header-controls">
+      <a href="userhome.html"><button>Home</button></a>
+      <a href="reporthome.html"><button>Report An Issue</button></a>
+      <button id="theme-toggle-btn" title="Toggle Theme">🌙</button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <div class="container">
+      <header class="page-title">
+        <h2>My Reported Issues</h2>
+        <p>Track, edit, or delete issues you've reported.</p>
+      </header>
+      <div id="my-issues-list-container"></div>
+    </div>
+  </main>
+
+  <script src="my-reports.js"></script>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Reports - Civic Reporter</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../styles/my-reports.css">
+</head>
+<body class="light-theme">
+
+  <div id="notification-container"></div>
+
+  <header class="app-header">
+    <h1>Civic Reporter</h1>
+    <div id="header-controls" class="header-controls">
+      <a href="userhome.html"><button>Home</button></a>
+      <a href="reporthome.html"><button>Report An Issue</button></a>
+      <button id="theme-toggle-btn" title="Toggle Theme">🌙</button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <div class="container">
+      <header class="page-title">
+        <h2>My Reported Issues</h2>
+        <p>Track, edit, or delete issues you've reported.</p>
+      </header>
+
+      <!-- Filters -->
+      <div class="report-filters">
+        <select id="filter-category">
+          <option value="">All Categories</option>
+          <option value="pothole">Pothole</option>
+          <option value="streetlight">Streetlight Out</option>
+          <option value="waste">Waste Management</option>
+          <option value="graffiti">Graffiti</option>
+          <option value="other">Other</option>
+        </select>
+
+        <select id="filter-status">
+          <option value="">All Statuses</option>
+          <option value="submitted">Submitted</option>
+          <option value="in-progress">In Progress</option>
+          <option value="resolved">Resolved</option>
+        </select>
+
+        <button id="filter-btn">Filter</button>
+      </div>
+
+      <div id="my-issues-list-container"></div>
+    </div>
+  </main>
+
+  <script src="../scripts/my-reports.js"></script>
+</body>
+</html>

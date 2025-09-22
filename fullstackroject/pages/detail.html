@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Details - Civic Reporter</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../styles/admin.css">
+
+  <!-- Google Maps API (replace YOUR_API_KEY with actual key) -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+</head>
+<body class="light-theme">
+
+  <div id="notification-container"></div>
+
+  <header class="app-header">
+    <h1>Report Details</h1>
+    <div id="header-controls" class="header-controls">
+      <a href="admin.html"><button>Back to Dashboard</button></a>
+      <button id="theme-toggle-btn" title="Toggle Theme">🌙</button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <div class="container">
+      <div id="report-details-container" class="report-details">
+        <p class="loading-msg">Loading report details...</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="../scripts/detail.js"></script>
+</body>
+</html>

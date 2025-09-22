@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Details - CivicSence</title>
+  <link rel="stylesheet" href="../styles/admindetail.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">Civic Reporter Admin</div>
+        <div class="actions">
+           <button  onclick="location.href='admin.html'">Back to Dashboard</button>
+        </div>
+    </header>
+
+    <main class="page-content">
+        <div class="detail-card">
+            <h2>Report Details</h2>
+            <div id="report-info">
+                </div>
+            
+            <h3>Location</h3>
+            <div id="report-map-detail"></div>
+
+            <h3>Attached Image</h3>
+            <div id="report-image-container">
+                </div>
+        </div>
+    </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="../scripts/admindetail.js"></script>
+</body>
+</html>

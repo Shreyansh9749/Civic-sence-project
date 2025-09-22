@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports Analytics</title>
+    <link rel="stylesheet" href="../styles/analytics.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="topbar">
+        <div class="brand">Admin Panel</div>
+        <div class="actions">
+            <button onclick="location.href='userhome.html'">Home</button>
+            <button id="theme-toggle" onclick="toggleTheme()">
+                <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="page-content">
+        <h2>Reports Analytics</h2>
+
+        <div class="analytics-cards">
+            <div class="analytics-card">
+                <h3>Total Reports</h3>
+                <p id="total-reports">0</p>
+            </div>
+            <div class="analytics-card">
+                <h3>Open Reports</h3>
+                <p id="open-reports">0</p>
+            </div>
+            <div class="analytics-card">
+                <h3>Closed Reports</h3>
+                <p id="closed-reports">0</p>
+            </div>
+        </div>
+
+        <div class="charts">
+            <div class="chart-card">
+                <h3>Reports by Status</h3>
+                <canvas id="statusChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Reports by Category</h3>
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <div class="recent-reports">
+            <h3>Recent Reports</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Reported By</th>
+                        <th>Status</th>
+                        <th>City</th>
+                    </tr>
+                </thead>
+                <tbody id="recent-reports-body">
+                    <!-- Dynamic rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="../scripts/analytics.js"></script>
+</body>
+</html>
